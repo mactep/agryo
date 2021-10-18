@@ -1,0 +1,35 @@
+version: '3.7'
+
+services:
+  api:
+    container_name: agryo-api
+    image: golang:1.17.1-alpine
+    restart: unless-stopped
+    volumes:
+      - ./.:/server
+    working_dir: /server
+    ports:
+      - 8080:8080
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: $DB_NAME
+      DB_USERNAME: postgres
+      DB_PASSWORD: $DB_PASSWORD
+      ACCOUNT_ID: $ACCOUNT_ID
+      PUBLIC_KEY: $PUBLIC_KEY
+      PRIVATE_KEY: $PRIVATE_KEY
+    command: go run main.go
+
+  db:
+    container_name: agryo-db
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: $DB_NAME
+      POSTGRES_PASSWORD: $DB_PASSWORD
+        # volumes:
+        #   - ./postgres:/var/lib/postgresql/data
+        #   - ./cotacao.sql:/docker-entrypoint-initdb.d/cotacao.sql
+    ports:
+      - 5432:5432
