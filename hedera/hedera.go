@@ -10,7 +10,7 @@ import (
 )
 
 type HederaAPI interface {
-	HashPolygon(Polygon, chan []byte) error
+	HashPolygon(Feature, chan []byte) error
 }
 
 type hederaAPI struct {
@@ -37,8 +37,8 @@ func NewHederaAPI(accountID string, privateKey string) (HederaAPI, error) {
 }
 
 // Send the polygon to the HCS and returns it's hash
-func (api hederaAPI) HashPolygon(quoteRequest Polygon, ch chan []byte) error {
-	jsonValue, err := json.Marshal(quoteRequest)
+func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
+	jsonValue, err := json.Marshal(polygon)
 	if err != nil {
 		return err
 	}

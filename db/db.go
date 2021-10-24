@@ -60,13 +60,19 @@ func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Prope
 
 func (db DB) FindPolygonByID(id string) (string, error) {
 	row := db.conn.QueryRow(`
-		SELECT ST_AsGeoJSON(geom)::json
-		FROM polygons WHERE id=$1;
+		SELECT json_build_object(
+			'type',       'Feature',
+			'geometry',   ST_AsGeoJSON(polygons.geom)::json,
+			'properties', properties
+		)
+		FROM polygons
+		join properties on polygons.id=properties.polygonid
+		where polygons.id = $1
 	`, id)
 
-	var geoJSON string
-	err := row.Scan(&geoJSON)
-	return geoJSON, err
+	var feature string
+	err := row.Scan(&feature)
+	return feature, err
 }
 
 func initDB(db *sql.DB) error {
