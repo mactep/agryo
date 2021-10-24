@@ -1,8 +1,8 @@
 package main
 
-import "log"
-
 import (
+	"log"
+
 	"github.com/mactep/agryo/server"
 	"github.com/mactep/agryo/util"
 )
