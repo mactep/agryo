@@ -72,7 +72,7 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, err)
 			return
 		}
-		err = server.db.CreatePolygon(string(geometry), string(hash))
+		err = server.db.CreatePolygon(string(geometry), string(hash), polygon.Properties)
 		if err != nil {
 			fmt.Fprint(w, err)
 			return
@@ -83,6 +83,8 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// Searches in the database for for a polygon with the given ID and returns
+// it alongside the hash and it's properties
 func (server Server) handlePolygon(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.NotFound(w, r)

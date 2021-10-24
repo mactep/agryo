@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq"
+	"github.com/mactep/agryo/hedera"
 )
 
 type DB struct {
@@ -30,8 +31,30 @@ func NewDB(user, password, host, port, DBName string) (DB, error) {
 	}, err
 }
 
-func (db DB) CreatePolygon(geometry string, hash string) error {
-	_, err := db.conn.Exec("INSERT INTO polygons (geom, hash) VALUES (ST_GeomFromGeoJSON($1), $2)", geometry, hash)
+func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Properties) error {
+	result, err := db.conn.Exec("INSERT INTO polygons (geom, hash) VALUES (ST_GeomFromGeoJSON($1), $2)", geometry, hash)
+	if err != nil {
+		return err
+	}
+
+	polygonId, err := result.LastInsertId()
+	polygonId += 1
+	// TODO: refactor this ASAP
+	query := fmt.Sprintf(`
+		INSERT INTO properties (
+			gid, idfarmer, companyid, regionid, countryid, stateid,
+			municipalityid, technicalid, status, activity, bsow,
+			product, eharvest, latcenter, loncenter, polygonId
+		)
+		VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', %d)
+		`,
+		properties.Gid, properties.Idfarmer, properties.Companyid, properties.Regionid, properties.Countryid, properties.Stateid,
+		properties.Municipalityid, properties.Technicalid, properties.Status, properties.Activity, properties.Bsow,
+		properties.Product, properties.Eharvest, properties.Latcenter, properties.Loncenter, polygonId,
+	)
+
+	_, err = db.conn.Exec(query)
+
 	return err
 }
 
@@ -51,7 +74,7 @@ func initDB(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS polygons (
 			id SERIAL PRIMARY KEY,
 			geom geometry(POLYGON, 4326) NOT NULL,
-			hash VARCHAR(255)
+			hash VARCHAR(255) UNIQUE
 		);
 
 		CREATE TABLE IF NOT EXISTS properties (
