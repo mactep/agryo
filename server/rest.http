@@ -1,4 +1,4 @@
-POST http://localhost:8080/polygon
+POST http://localhost:8080/hash-polygon
 Content-Type: application/json
 
 {
@@ -57,3 +57,7 @@ Content-Type: application/json
     }
   ]
 }
+
+####
+
+GET http://localhost:8080/polygon?id=2

@@ -30,8 +30,9 @@ func NewDB(user, password, host, port, DBName string) (DB, error) {
 	}, err
 }
 
-func (db DB) CreatePolygon(geometry string, hash string) (sql.Result, error) {
-	return db.conn.Exec("INSERT INTO polygons (geom, hash) VALUES (ST_GeomFromGeoJSON($1), hash)", geometry, hash)
+func (db DB) CreatePolygon(geometry string, hash string) error {
+	_, err := db.conn.Exec("INSERT INTO polygons (geom, hash) VALUES (ST_GeomFromGeoJSON($1), $2)", geometry, hash)
+	return err
 }
 
 func (db DB) FindPolygonByID(id string) (string, error) {

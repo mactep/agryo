@@ -1,6 +1,6 @@
 package hedera
 
-type Polygon struct {
+type FeatureCollection struct {
 	Type     string    `json:"type"`
 	Features []Feature `json:"features"`
 }
