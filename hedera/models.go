@@ -31,4 +31,5 @@ type Properties struct {
 	Eharvest       string `json:"eharvest"`
 	Latcenter      string `json:"latcenter"`
 	Loncenter      string `json:"loncenter"`
+	Hash           string `json:"hash,omitempty"`
 }

@@ -32,7 +32,7 @@ func NewDB(user, password, host, port, DBName string) (DB, error) {
 }
 
 func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Properties) error {
-	result, err := db.conn.Exec("INSERT INTO polygons (geom, hash) VALUES (ST_GeomFromGeoJSON($1), $2)", geometry, hash)
+	result, err := db.conn.Exec("INSERT INTO polygons (geom) VALUES (ST_GeomFromGeoJSON($1))", geometry)
 	if err != nil {
 		return err
 	}
@@ -44,13 +44,13 @@ func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Prope
 		INSERT INTO properties (
 			gid, idfarmer, companyid, regionid, countryid, stateid,
 			municipalityid, technicalid, status, activity, bsow,
-			product, eharvest, latcenter, loncenter, polygonId
+			product, eharvest, latcenter, loncenter, hash, polygonId
 		)
-		VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', %d)
+		VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', '%s', %d)
 		`,
 		properties.Gid, properties.Idfarmer, properties.Companyid, properties.Regionid, properties.Countryid, properties.Stateid,
 		properties.Municipalityid, properties.Technicalid, properties.Status, properties.Activity, properties.Bsow,
-		properties.Product, properties.Eharvest, properties.Latcenter, properties.Loncenter, polygonId,
+		properties.Product, properties.Eharvest, properties.Latcenter, properties.Loncenter, hash, polygonId,
 	)
 
 	_, err = db.conn.Exec(query)
@@ -79,8 +79,7 @@ func initDB(db *sql.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS polygons (
 			id SERIAL PRIMARY KEY,
-			geom geometry(POLYGON, 4326) NOT NULL,
-			hash VARCHAR(255) UNIQUE
+			geom geometry(POLYGON, 4326) NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS properties (
@@ -101,6 +100,7 @@ func initDB(db *sql.DB) error {
 			eharvest VARCHAR(255),
 			latcenter VARCHAR(255),
 			loncenter VARCHAR(255),
+			hash VARCHAR(255) UNIQUE,
 			CONSTRAINT fk_polygon FOREIGN KEY(polygonId) REFERENCES polygons(id)
 		);
 	`)

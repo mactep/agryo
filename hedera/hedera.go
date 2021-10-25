@@ -37,6 +37,7 @@ func NewHederaAPI(accountID string, privateKey string) (HederaAPI, error) {
 }
 
 // Send the polygon to the HCS and returns it's hash
+// TODO: change this to a pub sub architecture
 func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 	jsonValue, err := json.Marshal(polygon)
 	if err != nil {
@@ -66,8 +67,9 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 		SetTopicID(topicID).
 		SetStartTime(time.Unix(0, 0)).
 		Subscribe(api.client, func(message hederaSDK.TopicMessage) {
-            fmt.Println("Received message ", message.SequenceNumber, " ", message.RunningHash, "\r")
+			// FIXME: this is not returning the expected hash
 			ch <- message.RunningHash
+			// ch <- []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 		})
 
 	if err != nil {
@@ -76,7 +78,7 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 
 	// Submit to topic
 	_, err = hederaSDK.NewTopicMessageSubmitTransaction().
-		SetMessage(jsonValue).
+		SetMessage([]byte("teste")).
 		SetTopicID(topicID).
 		Execute(api.client)
 

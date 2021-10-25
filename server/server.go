@@ -66,6 +66,7 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 		defer close(ch)
 		go server.hedera.HashPolygon(polygon, ch)
 		hash := <-ch
+		fmt.Println(string(hash))
 
 		geometry, err := json.Marshal(polygon.Geometry)
 		if err != nil {
