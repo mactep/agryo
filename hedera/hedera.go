@@ -3,7 +3,6 @@ package hedera
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	hederaSDK "github.com/hashgraph/hedera-sdk-go/v2"
@@ -78,7 +77,7 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 
 	// Submit to topic
 	_, err = hederaSDK.NewTopicMessageSubmitTransaction().
-		SetMessage([]byte("teste")).
+		SetMessage(jsonValue).
 		SetTopicID(topicID).
 		Execute(api.client)
 
