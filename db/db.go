@@ -31,7 +31,7 @@ func NewDB(user, password, host, port, DBName string) (DB, error) {
 	}, err
 }
 
-func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Properties) error {
+func (db DB) CreatePolygon(geometry string, hash []byte, properties hedera.Properties) error {
 	result, err := db.conn.Exec("INSERT INTO polygons (geom) VALUES (ST_GeomFromGeoJSON($1))", geometry)
 	if err != nil {
 		return err
@@ -39,21 +39,19 @@ func (db DB) CreatePolygon(geometry string, hash string, properties hedera.Prope
 
 	polygonId, err := result.LastInsertId()
 	polygonId += 1
-	// TODO: refactor this ASAP
-	query := fmt.Sprintf(`
+	_, err = db.conn.Exec(`
 		INSERT INTO properties (
 			gid, idfarmer, companyid, regionid, countryid, stateid,
 			municipalityid, technicalid, status, activity, bsow,
 			product, eharvest, latcenter, loncenter, hash, polygonId
 		)
-		VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', '%s', %d)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 		`,
 		properties.Gid, properties.Idfarmer, properties.Companyid, properties.Regionid, properties.Countryid, properties.Stateid,
 		properties.Municipalityid, properties.Technicalid, properties.Status, properties.Activity, properties.Bsow,
 		properties.Product, properties.Eharvest, properties.Latcenter, properties.Loncenter, hash, polygonId,
 	)
 
-	_, err = db.conn.Exec(query)
 
 	return err
 }
@@ -100,7 +98,7 @@ func initDB(db *sql.DB) error {
 			eharvest VARCHAR(255),
 			latcenter VARCHAR(255),
 			loncenter VARCHAR(255),
-			hash VARCHAR(255) UNIQUE,
+			hash bytea UNIQUE,
 			CONSTRAINT fk_polygon FOREIGN KEY(polygonId) REFERENCES polygons(id)
 		);
 	`)

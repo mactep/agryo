@@ -9,13 +9,13 @@ import (
 
 func main() {
 	server, err := server.NewServer(
-		util.GetEnvAndRaise("ACCOUNT_ID"),
-		util.GetEnvAndRaise("PRIVATE_KEY"),
-		util.GetEnvAndRaise("DB_USERNAME"),
-		util.GetEnvAndRaise("DB_PASSWORD"),
-		util.GetEnvAndRaise("DB_HOST"),
-		util.GetEnvAndRaise("DB_PORT"),
-		util.GetEnvAndRaise("DB_NAME"),
+		util.GetEnvOrPanic("ACCOUNT_ID"),
+		util.GetEnvOrPanic("PRIVATE_KEY"),
+		util.GetEnvOrPanic("DB_USERNAME"),
+		util.GetEnvOrPanic("DB_PASSWORD"),
+		util.GetEnvOrPanic("DB_HOST"),
+		util.GetEnvOrPanic("DB_PORT"),
+		util.GetEnvOrPanic("DB_NAME"),
 	)
 
 	if err != nil {

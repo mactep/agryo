@@ -4,6 +4,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/mactep/agryo/db"
@@ -46,6 +47,7 @@ func (server Server) Run() {
 // Handler that parses the quote request, forward it to the API, parses the
 // response and returns it
 func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.NotFound(w, r)
 		return
@@ -66,14 +68,13 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 		defer close(ch)
 		go server.hedera.HashPolygon(polygon, ch)
 		hash := <-ch
-		fmt.Println(string(hash))
 
 		geometry, err := json.Marshal(polygon.Geometry)
 		if err != nil {
 			fmt.Fprint(w, err)
 			return
 		}
-		err = server.db.CreatePolygon(string(geometry), string(hash), polygon.Properties)
+		err = server.db.CreatePolygon(string(geometry), hash, polygon.Properties)
 		if err != nil {
 			fmt.Fprint(w, err)
 			return
@@ -87,6 +88,7 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 // Searches in the database for for a polygon with the given ID and returns
 // it alongside the hash and it's properties
 func (server Server) handlePolygon(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		http.NotFound(w, r)
 		return

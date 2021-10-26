@@ -19,10 +19,10 @@ func GetTestdata(t *testing.T, file string) io.ReadCloser {
 	return f
 }
 
-func GetEnvAndRaise(key string) string {
+func GetEnvOrPanic(key string) string {
 	value, exists := os.LookupEnv(key)
 	if !exists {
-		log.Fatalf("Variável de ambiente %s não definida!", key)
+		log.Fatalf("Environment variable %s not defined", key)
 	}
 
 	return value

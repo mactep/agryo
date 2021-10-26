@@ -13,7 +13,7 @@ type HederaAPI interface {
 }
 
 type hederaAPI struct {
-	client  *hederaSDK.Client
+	client *hederaSDK.Client
 }
 
 // Returns a new instance of the API
@@ -31,7 +31,7 @@ func NewHederaAPI(accountID string, privateKey string) (HederaAPI, error) {
 	client := hederaSDK.ClientForTestnet()
 	client.SetOperator(operatorAccountID, operatorKey)
 	return hederaAPI{
-		client:  client,
+		client: client,
 	}, nil
 }
 
@@ -66,9 +66,7 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 		SetTopicID(topicID).
 		SetStartTime(time.Unix(0, 0)).
 		Subscribe(api.client, func(message hederaSDK.TopicMessage) {
-			// FIXME: this is not returning the expected hash
 			ch <- message.RunningHash
-			// ch <- []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 		})
 
 	if err != nil {
