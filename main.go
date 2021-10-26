@@ -17,6 +17,7 @@ func main() {
 		util.GetEnvOrPanic("DB_PORT"),
 		util.GetEnvOrPanic("DB_NAME"),
 	)
+	defer server.Close()
 
 	if err != nil {
 		log.Fatalf("Failed to start the API: %v", err)

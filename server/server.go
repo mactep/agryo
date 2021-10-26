@@ -14,11 +14,14 @@ import (
 type Server struct {
 	hedera hedera.HederaAPI
 	db     db.DB
+	ch     chan []byte
 }
 
 // Returns a new instance of the local server or an error if it fails to connect to the database
 func NewServer(accountID, privateKey, user, password, host, port, DBName string) (Server, error) {
-	hederaClient, err := hedera.NewHederaAPI(accountID, privateKey)
+	ch := make(chan []byte)
+
+	hederaClient, err := hedera.NewHederaAPI(accountID, privateKey, ch)
 	if err != nil {
 		return Server{}, err
 	}
@@ -31,7 +34,12 @@ func NewServer(accountID, privateKey, user, password, host, port, DBName string)
 	return Server{
 		hedera: hederaClient,
 		db:     db,
+		ch:     ch,
 	}, nil
+}
+
+func (server Server) Close() {
+	close(server.ch)
 }
 
 // Attach the handlers and run the server on port 8080
@@ -64,21 +72,29 @@ func (server Server) handleHashPolygon(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: make it async
 	for _, polygon := range collection.Features {
-		ch := make(chan []byte)
-		defer close(ch)
-		go server.hedera.HashPolygon(polygon, ch)
-		hash := <-ch
+		go server.hedera.SubmitPolygon(polygon)
+	}
 
-		geometry, err := json.Marshal(polygon.Geometry)
-		if err != nil {
-			fmt.Fprint(w, err)
-			return
-		}
-		err = server.db.CreatePolygon(string(geometry), hash, polygon.Properties)
-		if err != nil {
-			fmt.Fprint(w, err)
-			return
-		}
+	count := len(collection.Features)
+	polygons := make([]json.RawMessage, count)
+
+	for i := 0; i < count; i++ {
+		hash := <- server.ch
+		polygons.
+		go func(i int)  {
+			geometry, err := json.Marshal(polygon.Geometry)
+			if err != nil {
+				fmt.Fprint(w, err)
+				return
+			}
+			polygons[i] = geometry
+		}(i)
+	}
+
+	err = server.db.CreatePolygon(string(geometry), hash, polygon.Properties)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")

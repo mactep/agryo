@@ -9,15 +9,18 @@ import (
 )
 
 type HederaAPI interface {
-	HashPolygon(Feature, chan []byte) error
+	SubmitPolygon(Feature) error
+	Close() error
 }
 
 type hederaAPI struct {
-	client *hederaSDK.Client
+	client  *hederaSDK.Client
+	topicID hederaSDK.TopicID
+	nodeID  hederaSDK.AccountID
 }
 
 // Returns a new instance of the API
-func NewHederaAPI(accountID string, privateKey string) (HederaAPI, error) {
+func NewHederaAPI(accountID string, privateKey string, ch chan []byte) (HederaAPI, error) {
 	operatorAccountID, err := hederaSDK.AccountIDFromString(accountID)
 	if err != nil {
 		return nil, err
@@ -30,19 +33,17 @@ func NewHederaAPI(accountID string, privateKey string) (HederaAPI, error) {
 
 	client := hederaSDK.ClientForTestnet()
 	client.SetOperator(operatorAccountID, operatorKey)
-	return hederaAPI{
-		client: client,
-	}, nil
-}
 
-// Send the polygon to the HCS and returns it's hash
-// TODO: change this to a pub sub architecture
-func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
-	jsonValue, err := json.Marshal(polygon)
-	if err != nil {
-		return err
+	api := hederaAPI{
+		client: client,
 	}
 
+	err = api.initClient(ch)
+
+	return api, err
+}
+
+func (api *hederaAPI) initClient(ch chan []byte) error {
 	// Create a topic
 	transactionResponse, err := hederaSDK.NewTopicCreateTransaction().
 		SetTransactionMemo("hash polygon").
@@ -53,6 +54,8 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 		return err
 	}
 
+	api.nodeID = transactionResponse.NodeID
+
 	// Get topic receipt
 	transactionReceipt, err := transactionResponse.GetReceipt(api.client)
 	if err != nil {
@@ -60,6 +63,7 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 	}
 
 	topicID := *transactionReceipt.TopicID
+	api.topicID = topicID
 
 	// Subscribe to topic
 	_, err = hederaSDK.NewTopicMessageQuery().
@@ -73,20 +77,14 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 		return err
 	}
 
-	// Submit to topic
-	_, err = hederaSDK.NewTopicMessageSubmitTransaction().
-		SetMessage(jsonValue).
-		SetTopicID(topicID).
-		Execute(api.client)
+	return nil
+}
 
-	if err != nil {
-		return err
-	}
-
+func (api hederaAPI) Close() error {
 	// Delete topic
-	transactionResponse, err = hederaSDK.NewTopicDeleteTransaction().
-		SetTopicID(topicID).
-		SetNodeAccountIDs([]hederaSDK.AccountID{transactionResponse.NodeID}).
+	transactionResponse, err := hederaSDK.NewTopicDeleteTransaction().
+		SetTopicID(api.topicID).
+		SetNodeAccountIDs([]hederaSDK.AccountID{api.nodeID}).
 		SetMaxTransactionFee(hederaSDK.NewHbar(5)).
 		Execute(api.client)
 	if err != nil {
@@ -100,4 +98,21 @@ func (api hederaAPI) HashPolygon(polygon Feature, ch chan []byte) error {
 	}
 
 	return nil
+}
+
+// Send the polygon to the HCS and returns it's hash
+// TODO: change this to a pub sub architecture
+func (api hederaAPI) SubmitPolygon(polygon Feature) error {
+	jsonValue, err := json.Marshal(polygon)
+	if err != nil {
+		return err
+	}
+
+	// Submit to topic
+	_, err = hederaSDK.NewTopicMessageSubmitTransaction().
+		SetMessage(jsonValue).
+		SetTopicID(api.topicID).
+		Execute(api.client)
+
+	return err
 }
